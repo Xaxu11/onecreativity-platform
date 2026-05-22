@@ -1,0 +1,95 @@
+generator client {
+  provider = "prisma-client-js"
+  output   = "../app/generated/prisma"
+}
+
+datasource db {
+  provider = "postgresql"
+ 
+}
+
+model User {
+  id        Int      @id @default(autoincrement())
+  fullName  String
+  email     String   @unique
+  phone     String?  @unique
+  role      Role
+  verified  Boolean  @default(false)
+  createdAt DateTime @default(now())
+
+  bookings Booking[]
+  reviews  Review[]
+}
+
+model ServiceCategory {
+  id           Int      @id @default(autoincrement())
+  categoryName String   @unique
+
+  services Service[]
+}
+
+model Service {
+  id                   Int      @id @default(autoincrement())
+  categoryId            Int
+  serviceName           String
+  description           String?
+  requiresVerification  Boolean  @default(true)
+
+  category ServiceCategory @relation(fields: [categoryId], references: [id])
+  bookings Booking[]
+}
+
+model Booking {
+  id        Int           @id @default(autoincrement())
+  clientId  Int
+  serviceId Int
+  status    BookingStatus @default(PENDING)
+  budget    Float?
+  location  String?
+  createdAt DateTime      @default(now())
+
+  client  User    @relation(fields: [clientId], references: [id])
+  service Service @relation(fields: [serviceId], references: [id])
+  payment Payment?
+}
+
+model Payment {
+  id        Int           @id @default(autoincrement())
+  bookingId Int           @unique
+  amount    Float
+  status    PaymentStatus @default(HELD_IN_ESCROW)
+  createdAt DateTime      @default(now())
+
+  booking Booking @relation(fields: [bookingId], references: [id])
+}
+
+model Review {
+  id        Int      @id @default(autoincrement())
+  userId    Int
+  rating    Int
+  comment   String?
+  createdAt DateTime @default(now())
+
+  user User @relation(fields: [userId], references: [id])
+}
+
+enum Role {
+  CLIENT
+  PROVIDER
+  ADMIN
+  GOVERNMENT
+}
+
+enum BookingStatus {
+  PENDING
+  ACCEPTED
+  IN_PROGRESS
+  COMPLETED
+  CANCELLED
+}
+
+enum PaymentStatus {
+  HELD_IN_ESCROW
+  RELEASED
+  REFUNDED
+}
